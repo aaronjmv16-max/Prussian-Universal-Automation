@@ -8,19 +8,19 @@ export default {
         .setDMPermission(false)
         .addStringOption(option =>
             option.setName('type')
-                .setDescription('Type of event (e.g., Tryout, SSU, etc.)')
+                .setDescription('Type of Event')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('link')
-                .setDescription('Roblox game URL (or Place ID)')
+                .setDescription('Roblox Game URL (or Place ID)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('time')
-                .setDescription('Time its Hosted')
+                .setDescription('Time it Will Start')
                 .setRequired(true))
         .addUserOption(option =>
             option.setName('host')
-                .setDescription('The Host of the Event')
+                .setDescription('The Host')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('comments')
@@ -29,40 +29,29 @@ export default {
 
     async execute(interaction) {
         try {
-            const eventType = interaction.options.getString('type');
-            let gameLink = interaction.options.getString('link').trim();
-            const hostTime = interaction.options.getString('time');
+            const eventType = interaction.options.getString('type').trim();
+            const rawLink = interaction.options.getString('link').trim();
+            const hostTime = interaction.options.getString('time').trim();
             const hostUser = interaction.options.getUser('host');
             const comments = interaction.options.getString('comments');
 
-            // 1. If user entered just a numeric Place ID, convert it to a direct roblox.com URL
-            if (/^\d+$/.test(gameLink)) {
-                gameLink = `https://roblox.com{gameLink}`;
-            } else {
-                // 2. Ensure https:// prefix if missing
-                if (!gameLink.startsWith('http://') && !gameLink.startsWith('https://')) {
-                    gameLink = `https://${gameLink}`;
-                }
-
-                // 3. Extract ONLY the numeric Place ID using .at(1) so the URL is always clean
-                const placeIdMatch = gameLink.match(/roblox\.com\/(?:[a-z]{2}\/)?games\/(\d+)/i);
-                const placeId = placeIdMatch ? placeIdMatch.at(1) : null;
-                if (placeId) {
-                    gameLink = `https://roblox.com{placeId}`;
-                } else if (!gameLink.includes('roblox.com')) {
+            // Extract numeric Place ID safely without regex group indexing
+            let gameLink = rawLink;
+            if (/^\d+$/.test(rawLink)) {
+                gameLink = `https://roblox.com{rawLink}`;
+            } else if (rawLink.includes('://roblox.com')) {
+                const afterGames = rawLink.split('://roblox.com')[1] || '';
+                const numericId = afterGames.split('/')[0].split('?')[0].replace(/\D/g, '');
+                if (!numericId) {
                     return await interaction.reply({
-                        content: '❌ Please provide a valid `roblox.com` game link or Place ID.',
+                        content: '❌ Could not find a valid Roblox Place ID in that link.',
                         flags: MessageFlags.Ephemeral
                     });
                 }
-            }
-
-            // 4. Verify Discord will accept the final URL format
-            try {
-                new URL(gameLink);
-            } catch {
+                gameLink = `https://roblox.com{numericId}`;
+            } else {
                 return await interaction.reply({
-                    content: '❌ That link is not a valid URL. Try pasting the full `https://roblox.com...` link or just the numeric Place ID.',
+                    content: '❌ Please provide a valid `://roblox.com...` link or Place ID.',
                     flags: MessageFlags.Ephemeral
                 });
             }
@@ -76,14 +65,14 @@ export default {
             }
 
             const eventEmbed = new EmbedBuilder()
-                .setColor('#D6AB29')
+                .setColor(0xD6AB29)
                 .setTitle(`📢 Event: ${eventType}`)
                 .setURL(gameLink)
                 .addFields(
-                    { name: 'Host', value: `${hostUser}`, inline: true },
-                    { name: 'Scheduled Time', value: hostTime, inline: true },
+                    { name: 'Host', value: `<@${hostUser.id}>`, inline: true },
+                    { name: 'Scheduled Time', value: hostTime || 'TBA', inline: true },
                     { name: 'Game Link', value: `[Play on Roblox](${gameLink})`, inline: false },
-                    { name: 'Comments', value: comments?.trim() || 'None', inline: false }
+                    { name: 'Comments', value: comments && comments.trim().length > 0 ? comments.trim() : 'None', inline: false }
                 )
                 .setFooter({ text: `Logged by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
                 .setTimestamp();
@@ -92,10 +81,10 @@ export default {
             await interaction.reply({ content: '✅ Event successfully logged!', flags: MessageFlags.Ephemeral });
 
         } catch (error) {
-            console.error('❌ logevent command error:', error);
+            console.error('❌ logevent error details:', JSON.stringify(error.rawError || error, null, 2));
             if (!interaction.replied && !interaction.deferred) {
                 await interaction.reply({
-                    content: '❌ An unexpected error occurred while logging the event.',
+                    content: `❌ Failed to log event: \`${error.message}\``,
                     flags: MessageFlags.Ephemeral
                 }).catch(() => {});
             }
