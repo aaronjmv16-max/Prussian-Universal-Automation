@@ -61,7 +61,7 @@ export default {
                 }
             }
 
-            const logChannel = interaction.guild.channels.cache.get('1319422533010128981');
+            const logChannel = interaction.guild.channels.cache.get('1574462575561801819');
             if (!logChannel) {
                 return await interaction.reply({
                     content: '⚠️ Log channel not found. Check the channel ID in `logevent.js`.',
@@ -70,7 +70,7 @@ export default {
             }
 
             const eventEmbed = new EmbedBuilder()
-                .setColor('#2B2D31')
+                .setColor('#D6AB29')
                 .setTitle(`Event: ${eventType}`)
                 .setURL(gameLink)
                 .setDescription(description)
