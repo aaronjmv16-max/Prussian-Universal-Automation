@@ -76,7 +76,7 @@ export default {
             }
 
             const eventEmbed = new EmbedBuilder()
-                .setColor('#2B2D31')
+                .setColor('#D6AB29')
                 .setTitle(`📢 Event: ${eventType}`)
                 .setURL(gameLink)
                 .addFields(
