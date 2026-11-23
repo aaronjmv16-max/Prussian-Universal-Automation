@@ -55,6 +55,11 @@ module.exports = {
             .setTimestamp();
 
         // Sends the embed with NO components array (no Join Event button)
-        await interaction.reply({ embeds: [eventEmbed] });
+        const logChannel = interaction.guild.channels.cache.get('1574462575561801819');
+if (!logChannel) return interaction.reply({ content: 'Log channel not found.', ephemeral: true });
+
+await logChannel.send({ embeds: [eventEmbed] });
+await interaction.reply({ content: '✅ Event successfully logged!', ephemeral: true });
+
     }
 };
