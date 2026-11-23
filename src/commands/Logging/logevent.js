@@ -12,11 +12,11 @@ export default {
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('link')
-                .setDescription('Roblox Game URL (or Place ID)')
+                .setDescription('Roblox Game URL Starting With https://')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('time')
-                .setDescription('Time it Will Start')
+                .setDescription('Time its Hosted)')
                 .setRequired(true))
         .addUserOption(option =>
             option.setName('host')
@@ -30,28 +30,25 @@ export default {
     async execute(interaction) {
         try {
             const eventType = interaction.options.getString('type').trim();
-            const rawLink = interaction.options.getString('link').trim();
+            const gameLink = interaction.options.getString('link').trim();
             const hostTime = interaction.options.getString('time').trim();
             const hostUser = interaction.options.getUser('host');
             const comments = interaction.options.getString('comments');
 
-            // Extract numeric Place ID safely without regex group indexing
-            let gameLink = rawLink;
-            if (/^\d+$/.test(rawLink)) {
-                gameLink = `https://roblox.com{rawLink}`;
-            } else if (rawLink.includes('://roblox.com')) {
-                const afterGames = rawLink.split('://roblox.com')[1] || '';
-                const numericId = afterGames.split('/')[0].split('?')[0].replace(/\D/g, '');
-                if (!numericId) {
-                    return await interaction.reply({
-                        content: '❌ Could not find a valid Roblox Place ID in that link.',
-                        flags: MessageFlags.Ephemeral
-                    });
-                }
-                gameLink = `https://roblox.com{numericId}`;
-            } else {
+            // Strictly require an HTTPS link
+            let parsedUrl;
+            try {
+                parsedUrl = new URL(gameLink);
+            } catch {
                 return await interaction.reply({
-                    content: '❌ Please provide a valid `://roblox.com...` link or Place ID.',
+                    content: '❌ Please provide a valid link starting with `https://`.',
+                    flags: MessageFlags.Ephemeral
+                });
+            }
+
+            if (parsedUrl.protocol !== 'https:' || !parsedUrl.hostname.endsWith('roblox.com')) {
+                return await interaction.reply({
+                    content: '❌ Only `https://` Roblox links are allowed (e.g., `https://roblox.com...`).',
                     flags: MessageFlags.Ephemeral
                 });
             }
@@ -66,12 +63,12 @@ export default {
 
             const eventEmbed = new EmbedBuilder()
                 .setColor(0xD6AB29)
-                .setTitle(`📢 Event: ${eventType}`)
-                .setURL(gameLink)
+                .setTitle(`Event: ${eventType}`)
+                .setURL(parsedUrl.href)
                 .addFields(
                     { name: 'Host', value: `<@${hostUser.id}>`, inline: true },
                     { name: 'Scheduled Time', value: hostTime || 'TBA', inline: true },
-                    { name: 'Game Link', value: `[Play on Roblox](${gameLink})`, inline: false },
+                    { name: 'Game Link', value: `[Play on Roblox](${parsedUrl.href})`, inline: false },
                     { name: 'Comments', value: comments && comments.trim().length > 0 ? comments.trim() : 'None', inline: false }
                 )
                 .setFooter({ text: `Logged by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
