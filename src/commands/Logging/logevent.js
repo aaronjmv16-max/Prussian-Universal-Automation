@@ -12,11 +12,11 @@ export default {
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('link')
-                .setDescription('Roblox Game URL Starting With https://')
+                .setDescription('Full Roblox Game URL')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('time')
-                .setDescription('Time its Hosted)')
+                .setDescription('The Time its Hosted')
                 .setRequired(true))
         .addUserOption(option =>
             option.setName('host')
@@ -63,12 +63,12 @@ export default {
 
             const eventEmbed = new EmbedBuilder()
                 .setColor(0xD6AB29)
-                .setTitle(`Event: ${eventType}`)
+                .setTitle(`📢 Event: ${eventType}`)
                 .setURL(parsedUrl.href)
                 .addFields(
                     { name: 'Host', value: `<@${hostUser.id}>`, inline: true },
                     { name: 'Scheduled Time', value: hostTime || 'TBA', inline: true },
-                    { name: 'Game Link', value: `[Play on Roblox](${parsedUrl.href})`, inline: false },
+                    { name: 'Game Link', value: parsedUrl.href, inline: false },
                     { name: 'Comments', value: comments && comments.trim().length > 0 ? comments.trim() : 'None', inline: false }
                 )
                 .setFooter({ text: `Logged by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
