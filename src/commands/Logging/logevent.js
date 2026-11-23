@@ -8,15 +8,15 @@ export default {
         .setDMPermission(false)
         .addStringOption(option =>
             option.setName('type')
-                .setDescription('Type of event (e.g., Training, Raid, Tryout, SSU)')
+                .setDescription('Type of Event (e.g., Training, Raid, Tryout, SSU)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('link')
-                .setDescription('Roblox game URL (or Place ID)')
+                .setDescription('Roblox Game Link (or Place ID)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('time')
-                .setDescription('The Time the Event is Hosted)')
+                .setDescription('Time Event is Hosted')
                 .setRequired(true))
         .addUserOption(option =>
             option.setName('host')
@@ -24,14 +24,13 @@ export default {
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('comments')
-                .setDescription('Optional P.S. or extra remarks from the host')
+                .setDescription('Optional Comments')
                 .setRequired(false)),
 
     async execute(interaction) {
         try {
             const eventType = interaction.options.getString('type');
             let gameLink = interaction.options.getString('link').trim();
-            const description = interaction.options.getString('description');
             const hostTime = interaction.options.getString('time');
             const hostUser = interaction.options.getUser('host');
             const comments = interaction.options.getString('comments');
@@ -45,10 +44,10 @@ export default {
                     gameLink = `https://${gameLink}`;
                 }
 
-                // 3. Extract ONLY the numeric Place ID ([1]) so the URL is always clean
+                // 3. Extract ONLY the numeric Place ID so the URL is always clean
                 const placeIdMatch = gameLink.match(/roblox\.com\/(?:[a-z]{2}\/)?games\/(\d+)/i);
-                if (placeIdMatch && placeIdMatch[1]) {
-                    gameLink = `https://roblox.com{placeIdMatch[1]}`;
+                if (placeIdMatch && placeIdMatch) {
+                    gameLink = `https://roblox.com{placeIdMatch}`;
                 } else if (!gameLink.includes('roblox.com')) {
                     return await interaction.reply({
                         content: '❌ Please provide a valid `roblox.com` game link or Place ID.',
@@ -79,12 +78,11 @@ export default {
                 .setColor('#2B2D31')
                 .setTitle(`Event: ${eventType}`)
                 .setURL(gameLink)
-                .setDescription(description)
                 .addFields(
                     { name: 'Host', value: `${hostUser}`, inline: true },
                     { name: 'Scheduled Time', value: hostTime, inline: true },
                     { name: 'Game Link', value: `[Play on Roblox](${gameLink})`, inline: false },
-                    { name: 'Comments', value: comments || 'None', inline: false }
+                    { name: 'Comments', value: comments?.trim() || 'None', inline: false }
                 )
                 .setFooter({ text: `Logged by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
                 .setTimestamp();
