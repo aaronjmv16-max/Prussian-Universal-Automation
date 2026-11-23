@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } from 'discord.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -8,11 +8,11 @@ export default {
         .setDMPermission(false)
         .addStringOption(option =>
             option.setName('type')
-                .setDescription('Type of Event (e.g., Tryout, Raid, SSU')
+                .setDescription('Type of event (e.g., Training, Raid, Tryout, SSU)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('link')
-                .setDescription('Roblox Game URL)')
+                .setDescription('Roblox game URL (or Place ID)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('description')
@@ -20,15 +20,15 @@ export default {
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('time')
-                .setDescription('Time the Event is Started)')
+                .setDescription('Time Scheduled')
                 .setRequired(true))
         .addUserOption(option =>
             option.setName('host')
-                .setDescription('The user hosting the event')
+                .setDescription('The User Hosting the Event')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('comments')
-                .setDescription('Additional Comments')
+                .setDescription('Optional Comments')
                 .setRequired(false)),
 
     async execute(interaction) {
@@ -52,11 +52,11 @@ export default {
                 // Extract Place ID if it's a ://roblox.com<id> URL so it always opens cleanly
                 const placeIdMatch = gameLink.match(/roblox\.com\/(?:[a-z]{2}\/)?games\/(\d+)/i);
                 if (placeIdMatch) {
-                    gameLink = `https://roblox.com{placeIdMatch[1]}`;
+                    gameLink = `https://roblox.com{placeIdMatch}`;
                 } else if (!gameLink.includes('roblox.com')) {
                     return await interaction.reply({
                         content: '❌ Please provide a valid `roblox.com` game link or Place ID.',
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
             }
@@ -65,12 +65,12 @@ export default {
             if (!logChannel) {
                 return await interaction.reply({
                     content: '⚠️ Log channel not found. Check the channel ID in `logevent.js`.',
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
             const eventEmbed = new EmbedBuilder()
-                .setColor('#D6AB29')
+                .setColor('#2B2D31')
                 .setTitle(`Event: ${eventType}`)
                 .setURL(gameLink)
                 .setDescription(description)
@@ -84,16 +84,17 @@ export default {
                 .setTimestamp();
 
             await logChannel.send({ embeds: [eventEmbed] });
-            await interaction.reply({ content: '✅ Event successfully logged!', ephemeral: true });
+            await interaction.reply({ content: '✅ Event successfully logged!', flags: MessageFlags.Ephemeral });
 
         } catch (error) {
             console.error('❌ logevent command error:', error);
             if (!interaction.replied && !interaction.deferred) {
                 await interaction.reply({
                     content: '❌ An unexpected error occurred while logging the event.',
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 }).catch(() => {});
             }
         }
     }
 };
+
