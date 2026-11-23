@@ -16,11 +16,11 @@ export default {
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('time')
-                .setDescription('The Time its Hosted')
+                .setDescription('Time the Event is Hosted')
                 .setRequired(true))
         .addUserOption(option =>
             option.setName('host')
-                .setDescription('The Host')
+                .setDescription('The User of the Host')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('comments')
@@ -74,7 +74,12 @@ export default {
                 .setFooter({ text: `Logged by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
                 .setTimestamp();
 
-            await logChannel.send({ embeds: [eventEmbed] });
+            await logChannel.send({
+                content: '@everyone',
+                embeds: [eventEmbed],
+                allowedMentions: { parse: ['everyone'] }
+            });
+
             await interaction.reply({ content: '✅ Event successfully logged!', flags: MessageFlags.Ephemeral });
 
         } catch (error) {
