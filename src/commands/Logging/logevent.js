@@ -15,12 +15,8 @@ export default {
                 .setDescription('Roblox game URL (or Place ID)')
                 .setRequired(true))
         .addStringOption(option =>
-            option.setName('description')
-                .setDescription('Details or Rules')
-                .setRequired(true))
-        .addStringOption(option =>
             option.setName('time')
-                .setDescription('Time Scheduled')
+                .setDescription('The Time the Event is Hosted)')
                 .setRequired(true))
         .addUserOption(option =>
             option.setName('host')
@@ -28,7 +24,7 @@ export default {
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('comments')
-                .setDescription('Optional Comments')
+                .setDescription('Optional P.S. or extra remarks from the host')
                 .setRequired(false)),
 
     async execute(interaction) {
@@ -40,25 +36,35 @@ export default {
             const hostUser = interaction.options.getUser('host');
             const comments = interaction.options.getString('comments');
 
-            // If user entered just a numeric Place ID, convert it to a direct roblox.com URL
+            // 1. If user entered just a numeric Place ID, convert it to a direct roblox.com URL
             if (/^\d+$/.test(gameLink)) {
                 gameLink = `https://roblox.com{gameLink}`;
             } else {
-                // Ensure https:// prefix if missing (e.g., ://roblox.com...)
+                // 2. Ensure https:// prefix if missing
                 if (!gameLink.startsWith('http://') && !gameLink.startsWith('https://')) {
                     gameLink = `https://${gameLink}`;
                 }
 
-                // Extract Place ID if it's a ://roblox.com<id> URL so it always opens cleanly
+                // 3. Extract ONLY the numeric Place ID ([1]) so the URL is always clean
                 const placeIdMatch = gameLink.match(/roblox\.com\/(?:[a-z]{2}\/)?games\/(\d+)/i);
-                if (placeIdMatch) {
-                    gameLink = `https://roblox.com{placeIdMatch}`;
+                if (placeIdMatch && placeIdMatch[1]) {
+                    gameLink = `https://roblox.com{placeIdMatch[1]}`;
                 } else if (!gameLink.includes('roblox.com')) {
                     return await interaction.reply({
                         content: '❌ Please provide a valid `roblox.com` game link or Place ID.',
                         flags: MessageFlags.Ephemeral
                     });
                 }
+            }
+
+            // 4. Verify Discord will accept the final URL format
+            try {
+                new URL(gameLink);
+            } catch {
+                return await interaction.reply({
+                    content: '❌ That link is not a valid URL. Try pasting the full `https://roblox.com...` link or just the numeric Place ID.',
+                    flags: MessageFlags.Ephemeral
+                });
             }
 
             const logChannel = interaction.guild.channels.cache.get('1574462575561801819');
@@ -97,4 +103,3 @@ export default {
         }
     }
 };
-
