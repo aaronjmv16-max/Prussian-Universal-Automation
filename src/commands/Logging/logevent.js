@@ -8,19 +8,19 @@ export default {
         .setDMPermission(false)
         .addStringOption(option =>
             option.setName('type')
-                .setDescription('Type of Event (e.g., Training, Raid, Tryout, SSU)')
+                .setDescription('Type of event (e.g., Tryout, SSU, etc.)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('link')
-                .setDescription('Roblox Game Link (or Place ID)')
+                .setDescription('Roblox game URL (or Place ID)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('time')
-                .setDescription('Time Event is Hosted')
+                .setDescription('Time its Hosted')
                 .setRequired(true))
         .addUserOption(option =>
             option.setName('host')
-                .setDescription('The User Hosting the Event')
+                .setDescription('The Host of the Event')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('comments')
@@ -44,10 +44,11 @@ export default {
                     gameLink = `https://${gameLink}`;
                 }
 
-                // 3. Extract ONLY the numeric Place ID so the URL is always clean
+                // 3. Extract ONLY the numeric Place ID using .at(1) so the URL is always clean
                 const placeIdMatch = gameLink.match(/roblox\.com\/(?:[a-z]{2}\/)?games\/(\d+)/i);
-                if (placeIdMatch && placeIdMatch) {
-                    gameLink = `https://roblox.com{placeIdMatch}`;
+                const placeId = placeIdMatch ? placeIdMatch.at(1) : null;
+                if (placeId) {
+                    gameLink = `https://roblox.com{placeId}`;
                 } else if (!gameLink.includes('roblox.com')) {
                     return await interaction.reply({
                         content: '❌ Please provide a valid `roblox.com` game link or Place ID.',
@@ -76,7 +77,7 @@ export default {
 
             const eventEmbed = new EmbedBuilder()
                 .setColor('#2B2D31')
-                .setTitle(`Event: ${eventType}`)
+                .setTitle(`📢 Event: ${eventType}`)
                 .setURL(gameLink)
                 .addFields(
                     { name: 'Host', value: `${hostUser}`, inline: true },
