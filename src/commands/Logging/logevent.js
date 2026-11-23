@@ -1,6 +1,4 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
-import { logger } from '../../utils/logger.js';
-import { replyUserError, ErrorTypes } from '../../utils/errorHandler.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -10,71 +8,92 @@ export default {
         .setDMPermission(false)
         .addStringOption(option =>
             option.setName('type')
-                .setDescription('Type of event (e.g., Training, Shift, Raid, Tryout)')
+                .setDescription('Type of Event (e.g., Tryout, Raid, SSU')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('link')
-                .setDescription('Roblox game URL')
+                .setDescription('Roblox Game URL)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('description')
-                .setDescription('Details or rules for the event')
+                .setDescription('Details or Rules')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('time')
-                .setDescription('Time the event will be hosted (e.g., 5:00 PM EST)')
+                .setDescription('Time the Event is Started)')
                 .setRequired(true))
         .addUserOption(option =>
             option.setName('host')
                 .setDescription('The user hosting the event')
-                .setRequired(true)),
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('comments')
+                .setDescription('Additional Comments')
+                .setRequired(false)),
 
-    async execute(interaction, config, client) {
+    async execute(interaction) {
         try {
             const eventType = interaction.options.getString('type');
-            const gameLink = interaction.options.getString('link');
+            let gameLink = interaction.options.getString('link').trim();
             const description = interaction.options.getString('description');
             const hostTime = interaction.options.getString('time');
             const hostUser = interaction.options.getUser('host');
+            const comments = interaction.options.getString('comments');
 
-            if (!gameLink.startsWith('http://') && !gameLink.startsWith('https://')) {
-                return await replyUserError(interaction, {
-                    type: ErrorTypes.VALIDATION,
-                    message: 'Please provide a valid Roblox game URL starting with http:// or https://.'
-                });
+            // If user entered just a numeric Place ID, convert it to a direct roblox.com URL
+            if (/^\d+$/.test(gameLink)) {
+                gameLink = `https://roblox.com{gameLink}`;
+            } else {
+                // Ensure https:// prefix if missing (e.g., ://roblox.com...)
+                if (!gameLink.startsWith('http://') && !gameLink.startsWith('https://')) {
+                    gameLink = `https://${gameLink}`;
+                }
+
+                // Extract Place ID if it's a ://roblox.com<id> URL so it always opens cleanly
+                const placeIdMatch = gameLink.match(/roblox\.com\/(?:[a-z]{2}\/)?games\/(\d+)/i);
+                if (placeIdMatch) {
+                    gameLink = `https://roblox.com{placeIdMatch[1]}`;
+                } else if (!gameLink.includes('roblox.com')) {
+                    return await interaction.reply({
+                        content: '❌ Please provide a valid `roblox.com` game link or Place ID.',
+                        ephemeral: true
+                    });
+                }
             }
 
-            // Replace YOUR_CHANNEL_ID with your Discord channel ID
-            const logChannel = interaction.guild.channels.cache.get('1574462575561801819');
+            const logChannel = interaction.guild.channels.cache.get('1319422533010128981');
             if (!logChannel) {
-                return await replyUserError(interaction, {
-                    type: ErrorTypes.VALIDATION,
-                    message: 'Log channel not found. Check the channel ID in eventlog.js.'
+                return await interaction.reply({
+                    content: '⚠️ Log channel not found. Check the channel ID in `logevent.js`.',
+                    ephemeral: true
                 });
             }
 
             const eventEmbed = new EmbedBuilder()
                 .setColor('#2B2D31')
-                .setTitle(`📢 Event: ${eventType}`)
+                .setTitle(`Event: ${eventType}`)
+                .setURL(gameLink)
                 .setDescription(description)
                 .addFields(
-                    { name: 'Game Link', value: `[Click Here to View Game](${gameLink})`, inline: false }
-                    { name: 'Event Host', value: `${hostUser}`, inline: true },
+                    { name: 'Host', value: `${hostUser}`, inline: true },
                     { name: 'Scheduled Time', value: hostTime, inline: true },
+                    { name: 'Game Link', value: `[Play on Roblox](${gameLink})`, inline: false },
+                    { name: 'Comments', value: comments || 'None', inline: false }
                 )
                 .setFooter({ text: `Logged by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
                 .setTimestamp();
 
-            // Posts to your log channel with NO Join Event button
             await logChannel.send({ embeds: [eventEmbed] });
             await interaction.reply({ content: '✅ Event successfully logged!', ephemeral: true });
 
         } catch (error) {
-            logger.error('logevent command error:', error);
-            await replyUserError(interaction, {
-                type: ErrorTypes.UNKNOWN,
-                message: 'An unexpected error occurred while logging the event.'
-            }).catch(() => {});
+            console.error('❌ logevent command error:', error);
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({
+                    content: '❌ An unexpected error occurred while logging the event.',
+                    ephemeral: true
+                }).catch(() => {});
+            }
         }
     }
 };
