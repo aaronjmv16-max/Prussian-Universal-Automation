@@ -55,7 +55,7 @@ export default {
 
             const eventEmbed = new EmbedBuilder()
                 .setColor('#2B2D31')
-                .setTitle(`📢 Event Started: ${eventType}`)
+                .setTitle(`📢 Event: ${eventType}`)
                 .setDescription(description)
                 .addFields(
                     { name: 'Game Link', value: `[Click Here to View Game](${gameLink})`, inline: false }
